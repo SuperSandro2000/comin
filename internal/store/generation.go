@@ -226,7 +226,7 @@ func (s *Store) GenerationBuildStart(uuid, reason string) error {
 	return nil
 }
 
-func (s *Store) GenerationBuildFinished(uuid string, buildErr error) error {
+func (s *Store) GenerationBuildFinished(uuid string, outPath string, buildErr error) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	g, err := s.generationGet(uuid)
@@ -236,6 +236,7 @@ func (s *Store) GenerationBuildFinished(uuid string, buildErr error) error {
 	g.BuildEndedAt = timestamppb.New(time.Now().UTC())
 	if buildErr == nil {
 		g.BuildStatus = Built.String()
+		g.OutPath = outPath
 		// We create a gcroots for the last built generation
 		// in order to avoid the Nix garbage collector to
 		// remove this store path which could be used later by

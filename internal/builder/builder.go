@@ -56,7 +56,7 @@ type Builder struct {
 	evaluator   Exec
 	evaluatorWg *sync.WaitGroup
 
-	buildator   Exec
+	buildator   Buildator
 	buildatorWg *sync.WaitGroup
 
 	isSuspended bool
@@ -160,12 +160,35 @@ func (r *Evaluator) Run(ctx context.Context) (err error) {
 }
 
 type Buildator struct {
+	Exec
 	drvPath   string
+	outPath   string
 	buildFunc executor.BuildFunc
 }
 
+func NewBuildator(r Runnable, timeout time.Duration) Buildator {
+	return Buildator{
+		Exec: Exec{
+			runnable: r,
+			mu:       sync.Mutex{},
+			done:     make(chan struct{}),
+			timeout:  timeout,
+		},
+	}
+}
+
 func (r *Buildator) Run(ctx context.Context) (err error) {
-	return r.buildFunc(ctx, r.drvPath)
+	outPath, err := r.buildFunc(ctx, r.drvPath)
+	if err != nil {
+		return err
+	}
+
+	r.outPath = outPath
+	return nil
+}
+
+func (r *Buildator) getOutPath() (outPath string) {
+	return r.outPath
 }
 
 // Eval evaluates a generation. It cancels current any generation
@@ -224,7 +247,7 @@ func (b *Builder) Eval(ctx context.Context, rs *protobuf.RepositoryStatus) error
 			if err := b.store.GenerationBuildStart(g.Uuid, BuildReasonAlreadyBuilt); err != nil {
 				logrus.Errorf("builder: %s", err)
 			}
-			if err := b.store.GenerationBuildFinished(g.Uuid, nil); err != nil {
+			if err := b.store.GenerationBuildFinished(g.Uuid, evaluator.outPath, nil); err != nil {
 				logrus.Errorf("builder: %s", err)
 			}
 			select {
@@ -325,7 +348,7 @@ func (b *Builder) build(ctx context.Context, generationUuid string) error {
 		drvPath:   generation.DrvPath,
 		buildFunc: b.executor.Build,
 	}
-	b.buildator = NewExec(buildator, b.buildTimeout)
+	b.buildator = NewBuildator(buildator, b.buildTimeout)
 
 	// This is to wait until the evaluator is stopped
 	b.buildatorWg.Add(1)
@@ -336,7 +359,7 @@ func (b *Builder) build(ctx context.Context, generationUuid string) error {
 		b.buildator.Wait()
 		b.mu.Lock()
 		defer b.mu.Unlock()
-		err := b.store.GenerationBuildFinished(generationUuid, b.buildator.getErr())
+		err := b.store.GenerationBuildFinished(generationUuid, b.buildator.getOutPath(), b.buildator.getErr())
 		if err != nil {
 			logrus.Error(err)
 		}

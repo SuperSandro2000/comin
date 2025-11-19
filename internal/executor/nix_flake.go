@@ -55,7 +55,7 @@ func (n *NixFlakeLocal) Eval(ctx context.Context, repositoryPath, repositorySubd
 	return
 }
 
-func (n *NixFlakeLocal) Build(ctx context.Context, drvPath string) (err error) {
+func (n *NixFlakeLocal) Build(ctx context.Context, drvPath string) (outpath string, err error) {
 	return buildWithFlake(ctx, drvPath)
 }
 

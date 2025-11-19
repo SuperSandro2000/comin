@@ -34,7 +34,7 @@ var buildCmd = &cobra.Command{
 			if err != nil {
 				logrus.Errorf("Failed to evaluate the configuration '%s': '%s'", host, err)
 			}
-			err = executor.Build(ctx, drvPath)
+			_, err = executor.Build(ctx, drvPath)
 			if err != nil {
 				logrus.Errorf("Failed to build the configuration '%s': '%s'", host, err)
 			}

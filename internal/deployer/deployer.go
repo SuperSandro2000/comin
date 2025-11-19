@@ -162,6 +162,11 @@ func (d *Deployer) Submit(generation *protobuf.Generation, operation string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
+	if generation.OutPath == "" {
+		logrus.Errorf("deployer: cannot deploy generation %s because it has no OutPath", generation.Uuid)
+		return
+	}
+
 	if !d.IsAlreadyDeployed(generation) {
 		d.GenerationToDeploy = generation
 		d.Operation = operation

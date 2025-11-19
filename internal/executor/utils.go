@@ -152,24 +152,46 @@ func showDerivationWithFlake(ctx context.Context, flakeUrl, hostname, systemAttr
 		outPath = "/nix/store/" + outPath
 	}
 	logrus.Infof("nix: the derivation path is %s", drvPath)
-	logrus.Infof("nix: the output path is %s", outPath)
-	return
-}
-
-func buildWithFlake(ctx context.Context, drvPath string) (err error) {
-	args := []string{
-		"build",
-		fmt.Sprintf("%s^*", drvPath),
-		"-L",
-		"--no-link"}
-	err = runNixFlakeCommand(ctx, args, os.Stdout, os.Stderr)
-	if err != nil {
-		return
+	if outPath == "" {
+		logrus.Info("nix: the output path is not known yet")
+	} else {
+		logrus.Infof("nix: the output path is %s", outPath)
 	}
 	return
 }
 
-func buildWithNix(ctx context.Context, drvPath string) (err error) {
+func buildWithFlake(ctx context.Context, drvPath string) (outpath string, err error) {
+	args := []string{
+		"build",
+		fmt.Sprintf("%s^*", drvPath),
+		"-L",
+		"--no-link",
+		"--json"}
+	var buildJSON bytes.Buffer
+	err = runNixFlakeCommand(ctx, args, &buildJSON, os.Stderr)
+	if err != nil {
+		return "", err
+	}
+
+	type BuildOutput struct {
+		Outputs struct {
+			Out string `json:"out"`
+		} `json:"outputs"`
+	}
+
+	var results []BuildOutput
+	if err := json.Unmarshal(buildJSON.Bytes(), &results); err != nil {
+		return "", nil
+	}
+
+	if len(results) == 0 {
+		return "", nil
+	}
+
+	return results[0].Outputs.Out, nil
+}
+
+func buildWithNix(ctx context.Context, drvPath string) (outpath string, err error) {
 	args := []string{
 		"-r",
 		drvPath,

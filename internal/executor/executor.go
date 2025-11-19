@@ -7,7 +7,7 @@ import (
 )
 
 type EvalFunc func(ctx context.Context, repositoryPath, repositorySubdir, commitId, systemAttr, hostname string) (drvPath string, outPath string, machineId string, err error)
-type BuildFunc func(ctx context.Context, drvPath string) error
+type BuildFunc func(ctx context.Context, drvPath string) (outPath string, err error)
 
 // Executor contains the function used by comin to actually do actions
 // on the host. This allows us to abstract the way Nix expression are
@@ -16,7 +16,7 @@ type BuildFunc func(ctx context.Context, drvPath string) error
 // https://github.com/nlewo/comin/pull/74)
 type Executor interface {
 	Eval(ctx context.Context, repositoryPath, repositorySubdir, commitId, systemAttr, hostname string) (drvPath string, outPath string, machineId string, err error)
-	Build(ctx context.Context, drvPath string) (err error)
+	Build(ctx context.Context, drvPath string) (outPath string, err error)
 	Deploy(ctx context.Context, outPath, operation string) (needToRestartComin bool, profilePath string, err error)
 	NeedToReboot(outPath, operation string) bool
 	ReadMachineId() (string, error)

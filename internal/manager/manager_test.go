@@ -58,18 +58,18 @@ func (n ExecutorMock) Eval(ctx context.Context, repositoryPath, repositorySubdir
 	if ok {
 		return "drv-path", "out-path", n.machineId, nil
 	} else {
-		return "", "", n.machineId, fmt.Errorf("An error occured")
+		return "", "", n.machineId, fmt.Errorf("An error occurred")
 	}
 }
-func (n ExecutorMock) Build(ctx context.Context, drvPath string) (err error) {
+func (n ExecutorMock) Build(ctx context.Context, drvPath string) (outPath string, err error) {
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		return "", ctx.Err()
 	case ok := <-n.buildOk:
 		if ok {
-			return nil
+			return "out-path", nil
 		} else {
-			return fmt.Errorf("An error occured")
+			return "", fmt.Errorf("An error occurred")
 		}
 	}
 }
@@ -219,7 +219,7 @@ func TestDeploy(t *testing.T) {
 	assert.False(t, m.Fetcher.GetState().IsFetching.GetValue())
 	assert.False(t, m.Builder.State().IsEvaluating.GetValue())
 	assert.False(t, m.Builder.State().IsBuilding.GetValue())
-	m.deployer.Submit(&protobuf.Generation{}, "test")
+	m.deployer.Submit(&protobuf.Generation{OutPath: "out-path"}, "test")
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		assert.Equal(c, "profile-path", m.deployer.State().Deployment.ProfilePath)
 	}, 5*time.Second, 100*time.Millisecond)

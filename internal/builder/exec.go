@@ -8,10 +8,10 @@ import (
 )
 
 type Runnable interface {
-	Run(c context.Context) error
+	Run(c context.Context) (err error)
 }
 
-// Exec runs a runnable object asyncronously while recording start time, finish time and
+// Exec runs a runnable object asynchronously while recording start time, finish time and
 type Exec struct {
 	timeout  time.Duration
 	runnable Runnable

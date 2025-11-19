@@ -41,7 +41,7 @@ func (n *NixLocal) Eval(ctx context.Context, repositoryPath, repositorySubdir, c
 	return showDerivationWithNix(ctx, nixDir, systemAttr)
 }
 
-func (n *NixLocal) Build(ctx context.Context, drvPath string) (err error) {
+func (n *NixLocal) Build(ctx context.Context, drvPath string) (outPath string, err error) {
 	return buildWithNix(ctx, drvPath)
 }
 

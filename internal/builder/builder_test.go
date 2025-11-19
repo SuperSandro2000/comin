@@ -41,12 +41,12 @@ func (n ExecutorMock) Eval(ctx context.Context, repositoryPath, repositorySubdir
 		return "drv-path", "out-path", "", nil
 	}
 }
-func (n ExecutorMock) Build(ctx context.Context, drvPath string) (err error) {
+func (n ExecutorMock) Build(ctx context.Context, drvPath string) (outPath string, err error) {
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		return "", ctx.Err()
 	case <-n.buildDone:
-		return nil
+		return "out-path", nil
 	}
 }
 func NewExecutorMock(alreadyBuilt bool) ExecutorMock {
